@@ -5,6 +5,7 @@ import { Routes } from "react-router-dom";
 import { Route } from "react-router-dom";
 import { Index } from "@/pages/index";
 import { MainLayout } from "@/layouts/main-layout";
+import { RegisterPage } from "./pages/RegisterPage";
 
 import "./index.css";
 
@@ -14,6 +15,7 @@ createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Index />} />
+          <Route path="/register" element={<RegisterPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
