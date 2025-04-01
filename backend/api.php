@@ -45,7 +45,7 @@ if ($path[0] === "auth") {
             break;
         case "POST":
             $user = verifyToken();
-            addUser($pdo, $input);
+            modifyUser($pdo, $input);
             break;
         default:
             echo json_encode(["error" => "Invalid request"]);
@@ -91,23 +91,28 @@ function getAllUsers($pdo) {
     }
 }
 
-function addUser($pdo, $data) {
-    if (!isset($data["username"], $data["email"], $data["info"], $data["gender"], $data["media"])) {
+function modifyUser($pdo, $data) {
+    
+    if (!isset($data["id"], $data["info"], $data["gender"], $data["media"])) {
         echo json_encode(["error" => "Missing required fields"]);
         return;
     }
 
     try {
-        $stmt = $pdo->prepare("INSERT INTO user (username, email, info, gender, media) VALUES (:username, :email, :info, :gender, :media)");
+        $stmt = $pdo->prepare("UPDATE user SET info = :info, gender = :gender, media = :media WHERE id = :id");
+
         $stmt->execute([
-            ":username" => $data["username"],
-            ":email" => $data["email"],
+            ":id" => $data["id"], 
             ":info" => $data["info"],
             ":gender" => $data["gender"],
             ":media" => json_encode($data["media"])
         ]);
 
-        echo json_encode(["message" => "User added successfully"]);
+        if ($stmt->rowCount() > 0) {
+            echo json_encode(["message" => "User updated successfully"]);
+        } else {
+            echo json_encode(["error" => "User not found or no changes made"]);
+        }
     } catch (PDOException $e) {
         echo json_encode(["error" => "Database error: " . $e->getMessage()]);
     }
