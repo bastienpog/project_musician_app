@@ -1,55 +1,80 @@
 <?php
 require_once "db.php";
+require_once "vendor/autoload.php";
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json");
+
+$SECRET_KEY = "123456789";
+$ALGORITHM = "HS256";
 
 $method = $_SERVER["REQUEST_METHOD"];
 $path = explode("/", trim($_SERVER["REQUEST_URI"], "/"));
 $input = json_decode(file_get_contents("php://input"), true);
 
-// Route: /users
-if ($path[0] === "users") {
+if ($path[0] === "auth") {
+    switch ($path[1]) {
+        case "register":
+            if ($method === "POST") {
+                registerUser($pdo, $input);
+            } else {
+                echo json_encode(["error" => "Invalid request method or endpoint"]);
+            }
+            break;
+
+        case "login":
+            if ($method === "POST") {
+                loginUser($pdo, $input);
+            } else {
+                echo json_encode(["error" => "Invalid request method or endpoint"]);
+            }
+            break;
+
+        default:
+            echo json_encode(["error" => "Invalid request method or endpoint"]);
+    }
+} elseif ($path[0] === "users") {
     switch ($method) {
         case "GET":
-            getAllUsers($pdo);  // Fetch all users
+            $user = verifyToken();
+            getAllUsers($pdo);
             break;
         case "POST":
-            addUser($pdo, $input);  // Add new user
+            $user = verifyToken();
+            addUser($pdo, $input);
             break;
         default:
             echo json_encode(["error" => "Invalid request"]);
     }
-}
-// Route: /conversations
-elseif ($path[0] === "conversations") {
+} elseif ($path[0] === "conversations") {
     switch ($method) {
         case "GET":
-            getAllConversations($pdo);  // Fetch all conversations
+            $user = verifyToken();
+            getAllConversations($pdo);
             break;
         default:
             echo json_encode(["error" => "Invalid request"]);
     }
-}
-// Route: /messages
-elseif ($path[0] === "messages" && isset($path[1])) {
+} elseif ($path[0] === "messages" && isset($path[1])) {
     $conversationId = $path[1];
     switch ($method) {
         case "GET":
-            getMessagesByConversation($pdo, $conversationId);  // Fetch messages for specific conversation
+            $user = verifyToken();
+            getMessagesByConversation($pdo, $conversationId);
             break;
         default:
             echo json_encode(["error" => "Invalid request"]);
     }
 }
-// Default Invalid Route
+
 else {
     echo json_encode(["error" => "Invalid endpoint"]);
 }
 
-// Function to fetch all users
 function getAllUsers($pdo) {
     try {
         $stmt = $pdo->prepare("SELECT id, username, email, info, gender, media FROM user");
@@ -66,7 +91,6 @@ function getAllUsers($pdo) {
     }
 }
 
-// Function to add a new user
 function addUser($pdo, $data) {
     if (!isset($data["username"], $data["email"], $data["info"], $data["gender"], $data["media"])) {
         echo json_encode(["error" => "Missing required fields"]);
@@ -80,7 +104,7 @@ function addUser($pdo, $data) {
             ":email" => $data["email"],
             ":info" => $data["info"],
             ":gender" => $data["gender"],
-            ":media" => json_encode($data["media"]) // Convert media to JSON string
+            ":media" => json_encode($data["media"])
         ]);
 
         echo json_encode(["message" => "User added successfully"]);
@@ -89,7 +113,6 @@ function addUser($pdo, $data) {
     }
 }
 
-// Function to fetch all conversations
 function getAllConversations($pdo) {
     try {
         $stmt = $pdo->prepare("SELECT c.ConversationId, c.SenderId, c.RecipientId, u1.username AS sender_username, u2.username AS recipient_username
@@ -109,7 +132,6 @@ function getAllConversations($pdo) {
     }
 }
 
-// Function to fetch messages for a specific conversation
 function getMessagesByConversation($pdo, $conversationId) {
     try {
         $stmt = $pdo->prepare("SELECT m.MessageId, m.SenderId, m.RecipientId, m.content, m.timestamp, u1.username AS sender_username, u2.username AS recipient_username
@@ -131,7 +153,6 @@ function getMessagesByConversation($pdo, $conversationId) {
     }
 }
 
-// Function to fetch messages for a conversation (helper function)
 function getMessagesForConversation($pdo, $conversationId) {
     try {
         $stmt = $pdo->prepare("SELECT m.MessageId, m.SenderId, m.RecipientId, m.content, m.timestamp, u1.username AS sender_username, u2.username AS recipient_username
@@ -144,6 +165,72 @@ function getMessagesForConversation($pdo, $conversationId) {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         return ["error" => "Database error: " . $e->getMessage()];
+    }
+}
+
+function registerUser($pdo, $data) {
+    if (!isset($data["username"], $data["email"], $data["password"])) {
+        echo json_encode(["error" => "Missing required fields"]);
+        return;
+    }
+
+    $username = $data["username"];
+    $email = $data["email"];
+    $password = password_hash($data["password"], PASSWORD_BCRYPT);
+
+    try {
+        $stmt = $pdo->prepare("INSERT INTO user (username, email, password) VALUES (:username, :email, :password)");
+        $stmt->execute([
+            ":username" => $username,
+            ":email" => $email,
+            ":password" => $password
+        ]);
+        echo json_encode(["message" => "User registered successfully"]);
+    } catch (PDOException $e) {
+        echo json_encode(["error" => "Database error: " . $e->getMessage()]);
+    }
+}
+
+function loginUser($pdo, $data) {
+    global $SECRET_KEY, $ALGORITHM;
+
+    if (!isset($data["email"], $data["password"])) {
+        echo json_encode(["error" => "Missing email or password"]);
+        return;
+    }
+
+    $email = $data["email"];
+    $password = $data["password"];
+
+    try {
+        $stmt = $pdo->prepare("SELECT id, username, password FROM user WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($user && password_verify($password, $user["password"])) {
+            $payload = [
+                "id" => $user["id"],
+                "username" => $user["username"],
+                "exp" => time() + 3600 
+            ];
+            $token = JWT::encode($payload, $SECRET_KEY, $ALGORITHM);
+            echo json_encode(["token" => $token]);
+        } else {
+            echo json_encode(["error" => "Invalid credentials"]);
+        }
+    } catch (PDOException $e) {
+        echo json_encode(["error" => "Database error: " . $e->getMessage()]);
+    }
+}
+
+function verifyToken() {
+    global $SECRET_KEY, $ALGORITHM;
+    try {
+        $decoded = JWT::decode($token, new Key($SECRET_KEY, $ALGORITHM));
+        return $decoded;
+    } catch (Exception $e) {
+        echo json_encode(["error" => "Invalid token"]);
+        exit;
     }
 }
 ?>
