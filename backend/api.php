@@ -207,7 +207,11 @@ function loginUser($pdo, $data) {
                 "exp" => time() + 3600 
             ];
             $token = JWT::encode($payload, $SECRET_KEY, $ALGORITHM);
-            echo json_encode(["token" => $token]);
+            echo json_encode([
+                "token" => $token,
+                "userId" => $user["id"],
+                "username" => $user["username"]
+            ]);
         } else {
             echo json_encode(["error" => "Invalid credentials"]);
         }
@@ -215,6 +219,7 @@ function loginUser($pdo, $data) {
         echo json_encode(["error" => "Database error: " . $e->getMessage()]);
     }
 }
+
 
 function verifyToken() {
     global $SECRET_KEY, $ALGORITHM;
