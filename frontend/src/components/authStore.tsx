@@ -12,7 +12,6 @@ interface AuthState {
     login: (email: string, password: string) => Promise<void>;
     register: (username: string, email: string, password: string) => Promise<void>;
     logout: () => void;
-
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -30,7 +29,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         if (res.ok) {
             localStorage.setItem("token", data.token);
-            set({ token: data.token });
+            localStorage.setItem("userId", data.userId);
+
+            set({ token: data.token, user: { id: data.userId, email, username: data.username } });
         } else {
             console.error(data.error);
         }
@@ -53,8 +54,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     logout: () => {
         localStorage.removeItem("token");
+        localStorage.removeItem("userId");
         set({ user: null, token: null });
     },
 }));
-
-
