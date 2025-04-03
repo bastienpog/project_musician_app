@@ -40,11 +40,9 @@ if ($path[0] === "auth") {
 } elseif ($path[0] === "users") {
     switch ($method) {
         case "GET":
-            $user = verifyToken();
             getAllUsers($pdo);
             break;
         case "POST":
-            $user = verifyToken();
             modifyUser($pdo, $input);
             break;
         default:
@@ -52,18 +50,22 @@ if ($path[0] === "auth") {
     }
 } elseif ($path[0] === "conversations") {
     switch ($method) {
-        case "GET":
-            $user = verifyToken();
-            getAllConversations($pdo);
+        case "POST": 
+            $input = json_decode(file_get_contents("php://input"), true);
+            if (!isset($input['userId'])) {
+                echo json_encode(["error" => "User ID is required"]);
+                exit;
+            }
+            getUserConversations($pdo, $input['userId']);
             break;
+
         default:
-            echo json_encode(["error" => "Invalid request"]);
+            echo json_encode(["error" => "Invalid request method"]);
     }
 } elseif ($path[0] === "messages" && isset($path[1])) {
     $conversationId = $path[1];
     switch ($method) {
         case "GET":
-            $user = verifyToken();
             getMessagesByConversation($pdo, $conversationId);
             break;
         default:
@@ -118,18 +120,19 @@ function modifyUser($pdo, $data) {
     }
 }
 
-function getAllConversations($pdo) {
+function getUserConversations($pdo, $userId) {
     try {
-        $stmt = $pdo->prepare("SELECT c.ConversationId, c.SenderId, c.RecipientId, u1.username AS sender_username, u2.username AS recipient_username
-                               FROM conversation c
-                               JOIN user u1 ON u1.id = c.SenderId
-                               JOIN user u2 ON u2.id = c.RecipientId");
-        $stmt->execute();
+        $stmt = $pdo->prepare("
+            SELECT c.ConversationId, c.SenderId, c.RecipientId, 
+                   u1.username AS sender_username, 
+                   u2.username AS recipient_username
+            FROM conversation c
+            JOIN user u1 ON u1.id = c.SenderId
+            JOIN user u2 ON u2.id = c.RecipientId
+            WHERE c.SenderId = :userId OR c.RecipientId = :userId
+        ");
+        $stmt->execute([":userId" => $userId]);
         $conversations = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        foreach ($conversations as &$conversation) {
-            $conversation["messages"] = getMessagesForConversation($pdo, $conversation["ConversationId"]);
-        }
 
         echo json_encode($conversations);
     } catch (PDOException $e) {
@@ -155,21 +158,6 @@ function getMessagesByConversation($pdo, $conversationId) {
         }
     } catch (PDOException $e) {
         echo json_encode(["error" => "Database error: " . $e->getMessage()]);
-    }
-}
-
-function getMessagesForConversation($pdo, $conversationId) {
-    try {
-        $stmt = $pdo->prepare("SELECT m.MessageId, m.SenderId, m.RecipientId, m.content, m.timestamp, u1.username AS sender_username, u2.username AS recipient_username
-                               FROM message m
-                               JOIN user u1 ON u1.id = m.SenderId
-                               JOIN user u2 ON u2.id = m.RecipientId
-                               WHERE m.ConversationId = :conversationId
-                               ORDER BY m.timestamp");
-        $stmt->execute([":conversationId" => $conversationId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        return ["error" => "Database error: " . $e->getMessage()];
     }
 }
 
