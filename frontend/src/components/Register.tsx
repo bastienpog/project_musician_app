@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from './authStore';
 
 export const Register: React.FC = () => {
@@ -10,11 +10,12 @@ export const Register: React.FC = () => {
     const [user, setUser] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-
+    const navigate = useNavigate()
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         await register(user, email, password);
+        navigate("/home")
     };
 
     return (
@@ -68,9 +69,7 @@ export const Register: React.FC = () => {
                     type="submit"
                     className="w-full bg-white text-pink-600 hover:bg-white/90 h-12 mt-8 font-medium"
                 >
-                    <Link to={"/home"}>
-                        Register
-                    </Link>
+                    Register
                 </Button>
             </form>
 
