@@ -52,8 +52,11 @@ export const Login: React.FC = () => {
                 <Button
                     type="submit"
                     className="w-full bg-white text-pink-600 hover:bg-white/90 h-12 mt-8 font-medium"
+                    asChild
                 >
-                    Login
+                    <Link to={"/home"}>
+                        Login
+                    </Link>
                 </Button>
             </form>
 

@@ -19,7 +19,8 @@ export const Register: React.FC = () => {
 
     return (
         <div className="flex flex-col items-center justify-center p-4">
-            <h1 className="text-3xl font-bold text-white mb-12">Login</h1>
+            <h1 className="text-3xl font-bold text-white mb-12">Register
+            </h1>
 
             <form onSubmit={handleLogin} className="flex flex-col flex-grow">
                 <div className="space-y-6 flex-grow">
@@ -67,7 +68,9 @@ export const Register: React.FC = () => {
                     type="submit"
                     className="w-full bg-white text-pink-600 hover:bg-white/90 h-12 mt-8 font-medium"
                 >
-                    Login
+                    <Link to={"/home"}>
+                        Register
+                    </Link>
                 </Button>
             </form>
 
