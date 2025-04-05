@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ProfileCard } from "@/components/Profile";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Header } from "@/components/Header";
 
 type MediaItem = {
     id: string;
@@ -74,19 +75,22 @@ export const Home = () => {
         }
     };
     return (
-        <div className="min-h-screen p-4 flex flex-col items-center bg-gradient-to-b from-pink-600 to-purple-700">
-            <div className="container mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl">
-                {profiles.slice(currentIndex, currentIndex + itemsPerPage).map((profile) => (
-                    <ProfileCard key={profile.id} profile={profile} />
-                ))}
-            </div>
-            <div className="flex gap-4 mt-6">
-                <Button onClick={prevProfiles} disabled={currentIndex === 0} variant="outline" className="rounded-full">
-                    <ArrowLeft className="w-6 h-6" />
-                </Button>
-                <Button onClick={nextProfiles} disabled={currentIndex + itemsPerPage >= profiles.length} variant="outline" className="rounded-full">
-                    <ArrowRight className="w-6 h-6" />
-                </Button>
+        <div className="min-h-screen bg-gradient-to-b from-pink-600 to-purple-700">
+            <Header />
+            <div className="p-4 flex flex-col items-center">
+                <div className="container mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl">
+                    {profiles.slice(currentIndex, currentIndex + itemsPerPage).map((profile) => (
+                        <ProfileCard key={profile.id} profile={profile} />
+                    ))}
+                </div>
+                <div className="flex gap-4 mt-6">
+                    <Button onClick={prevProfiles} disabled={currentIndex === 0} variant="outline" className="rounded-full">
+                        <ArrowLeft className="w-6 h-6" />
+                    </Button>
+                    <Button onClick={nextProfiles} disabled={currentIndex + itemsPerPage >= profiles.length} variant="outline" className="rounded-full">
+                        <ArrowRight className="w-6 h-6" />
+                    </Button>
+                </div>
             </div>
         </div>
     );

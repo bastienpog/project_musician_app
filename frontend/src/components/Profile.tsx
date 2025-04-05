@@ -30,7 +30,7 @@ export const ProfileCard: React.FC<{ profile: UserProfile }> = ({ profile }) => 
     const { profile_picture, cover_image, items } = profile.media;
 
     return (
-        <Card className="overflow-hidden bg-black/20 backdrop-blur-xl border-white/20 text-white shadow-2xl">
+        <Card className="overflow-hidden bg-black/20 border-white/20 text-white shadow-2xl">
             <CardHeader className="relative">
                 <img src={cover_image || "/fallback-cover.jpg"} className="w-full h-48 object-cover" />
 
@@ -64,7 +64,7 @@ export const ProfileCard: React.FC<{ profile: UserProfile }> = ({ profile }) => 
 
             <CardFooter className="flex justify-end">
                 <Button variant="secondary" className=" bg-white text-pink-600 p-6">
-                    Click here to chatting with this artist !
+                    Click here to chat with this artist !
                 </Button>
             </CardFooter>
         </Card>
