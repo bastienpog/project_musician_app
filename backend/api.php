@@ -1,24 +1,31 @@
 <?php
+// Load database connection and dependencies
 require_once "db.php";
 require_once "vendor/autoload.php";
+
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
+// Set necessary headers for CORS and content type
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json");
 
+// JWT configuration
 $SECRET_KEY = "123456789";
 $ALGORITHM = "HS256";
 
+// Capture request method and path info
 $method = $_SERVER["REQUEST_METHOD"];
 $path = explode("/", trim($_SERVER["REQUEST_URI"], "/"));
 $input = json_decode(file_get_contents("php://input"), true);
 
+// ROUTING SECTION
 if ($path[0] === "auth") {
     switch ($path[1]) {
         case "register":
+            // Handle user registration
             if ($method === "POST") {
                 registerUser($pdo, $input);
             } else {
@@ -27,6 +34,7 @@ if ($path[0] === "auth") {
             break;
 
         case "login":
+            // Handle user login
             if ($method === "POST") {
                 loginUser($pdo, $input);
             } else {
@@ -38,17 +46,19 @@ if ($path[0] === "auth") {
             echo json_encode(["error" => "Invalid request method or endpoint"]);
     }
 } elseif ($path[0] === "users") {
+    // Endpoints for user management
     switch ($method) {
         case "GET":
-            getAllUsers($pdo);
+            getAllUsers($pdo); // Get all users
             break;
         case "POST":
-            modifyUser($pdo, $input);
+            modifyUser($pdo, $input); // Update user details
             break;
         default:
             echo json_encode(["error" => "Invalid request"]);
     }
 } elseif ($path[0] === "conversations") {
+    // Get user conversations by user ID
     switch ($method) {
         case "POST": 
             $input = json_decode(file_get_contents("php://input"), true);
@@ -63,6 +73,7 @@ if ($path[0] === "auth") {
             echo json_encode(["error" => "Invalid request method"]);
     }
 } elseif ($path[0] === "messages" && isset($path[1])) {
+    // Get all messages for a given conversation ID
     $conversationId = $path[1];
     switch ($method) {
         case "GET":
@@ -71,12 +82,12 @@ if ($path[0] === "auth") {
         default:
             echo json_encode(["error" => "Invalid request"]);
     }
-}
-
-else {
+} else {
     echo json_encode(["error" => "Invalid endpoint"]);
 }
 
+
+// Retrieve all users from the database
 function getAllUsers($pdo) {
     try {
         $stmt = $pdo->prepare("SELECT id, username, email, info, gender, media FROM user");
@@ -93,8 +104,8 @@ function getAllUsers($pdo) {
     }
 }
 
+// Update user profile information
 function modifyUser($pdo, $data) {
-    
     if (!isset($data["id"], $data["info"], $data["gender"], $data["media"])) {
         echo json_encode(["error" => "Missing required fields"]);
         return;
@@ -120,6 +131,7 @@ function modifyUser($pdo, $data) {
     }
 }
 
+// Get all conversations that involve a specific user
 function getUserConversations($pdo, $userId) {
     try {
         $stmt = $pdo->prepare("
@@ -140,9 +152,12 @@ function getUserConversations($pdo, $userId) {
     }
 }
 
+// Get messages from a conversation
 function getMessagesByConversation($pdo, $conversationId) {
     try {
-        $stmt = $pdo->prepare("SELECT m.MessageId, m.SenderId, m.RecipientId, m.content, m.timestamp, u1.username AS sender_username, u2.username AS recipient_username
+        $stmt = $pdo->prepare("SELECT m.MessageId, m.SenderId, m.RecipientId, m.content, m.timestamp, 
+                                      u1.username AS sender_username, 
+                                      u2.username AS recipient_username
                                FROM message m
                                JOIN user u1 ON u1.id = m.SenderId
                                JOIN user u2 ON u2.id = m.RecipientId
@@ -161,6 +176,7 @@ function getMessagesByConversation($pdo, $conversationId) {
     }
 }
 
+// Register a new user with hashed password
 function registerUser($pdo, $data) {
     if (!isset($data["username"], $data["email"], $data["password"])) {
         echo json_encode(["error" => "Missing required fields"]);
@@ -184,6 +200,7 @@ function registerUser($pdo, $data) {
     }
 }
 
+// Log in a user and return JWT token on success
 function loginUser($pdo, $data) {
     global $SECRET_KEY, $ALGORITHM;
 
@@ -220,7 +237,7 @@ function loginUser($pdo, $data) {
     }
 }
 
-
+// JWT verification function
 function verifyToken() {
     global $SECRET_KEY, $ALGORITHM;
     try {
