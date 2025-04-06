@@ -4,6 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 
+// Conversation structure expected from the backend
 type Conversation = {
     ConversationId: number;
     SenderId: number;
@@ -12,12 +13,12 @@ type Conversation = {
     recipient_username: string;
 };
 
-
 export const Conversations: React.FC = () => {
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [userId, setUserId] = useState<string | null>(localStorage.getItem("userId"));
     const navigate = useNavigate();
 
+    // Fetch conversations from the server
     useEffect(() => {
         const fetchConversations = async () => {
             if (!userId) {
@@ -55,19 +56,21 @@ export const Conversations: React.FC = () => {
         fetchConversations();
     }, [userId]);
 
+    // Helper to get the other participant's username
     const getOtherUserName = (conversation: Conversation) => {
-        if (conversation.SenderId.toString() === userId) {
-            return conversation.recipient_username;
-        } else {
-            return conversation.sender_username;
-        }
+        return conversation.SenderId.toString() === userId
+            ? conversation.recipient_username
+            : conversation.sender_username;
     };
 
     return (
         <Card className="w-full max-w-md mx-auto bg-black/20 border-white/20 text-white pt-6">
+            {/* Header */}
             <div className="p-4 border-b border-white/10">
                 <h2 className="text-xl font-semibold">Messages</h2>
             </div>
+
+            {/* Conversation List Scroll Area */}
             <ScrollArea className="h-[600px]">
                 <div className="divide-y divide-white/10">
                     {conversations.map((conversation) => (

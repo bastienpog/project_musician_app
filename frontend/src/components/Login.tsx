@@ -6,16 +6,21 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from './authStore';
 
 export const Login: React.FC = () => {
+    // Zustand store for auth state management
     const { login } = useAuthStore();
+
+    // State to hold form input values
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const navigate = useNavigate()
 
+    // Navigation hook from React Router
+    const navigate = useNavigate();
+
+    // Handle form submission
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         await login(email, password);
-        navigate("/home")
-
+        navigate("/home");
     };
 
     return (
@@ -50,13 +55,11 @@ export const Login: React.FC = () => {
                     </div>
                 </div>
 
-
                 <Button
                     type="submit"
                     className="w-full bg-white text-pink-600 hover:bg-white/90 h-12 mt-8 font-medium"
                 >
                     Login
-
                 </Button>
             </form>
 

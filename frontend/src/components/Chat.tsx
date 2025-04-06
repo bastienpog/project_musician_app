@@ -4,9 +4,9 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send } from "lucide-react";
-import { ArrowLeft } from "lucide-react";
+import { Send, ArrowLeft } from "lucide-react";
 
+// Define message structure
 type Message = {
     id: string;
     content: string;
@@ -15,14 +15,16 @@ type Message = {
     status: "sent" | "delivered" | "read";
 };
 
+// Get the current user ID from localStorage
 const CURRENT_USER_ID = localStorage.getItem("userId");
 
 export const Chat: React.FC = () => {
     const { conversationId } = useParams<{ conversationId: string }>();
     const [messages, setMessages] = useState<Message[]>([]);
-    const [newMessage, setNewMessage] = useState("");
     const [otherUserName, setOtherUserName] = useState<string | null>(null);
-    const navigate = useNavigate()
+    const navigate = useNavigate();
+
+    // Fetch messages when component loads or conversationId changes
     useEffect(() => {
         if (!conversationId || !CURRENT_USER_ID) return;
 
@@ -31,6 +33,7 @@ export const Chat: React.FC = () => {
                 const res = await fetch(`http://localhost:8000/messages/${conversationId}`);
                 const data = await res.json();
 
+                // Format API response into local Message type
                 const formattedMessages: Message[] = data.map((msg: any) => ({
                     id: msg.MessageId.toString(),
                     content: msg.content,
@@ -45,6 +48,7 @@ export const Chat: React.FC = () => {
 
                 setMessages(formattedMessages);
 
+                // Determine the other user's name from the message sender/recipient
                 const otherUser =
                     data[0].SenderId.toString() === CURRENT_USER_ID
                         ? data[0].recipient_username
@@ -59,38 +63,24 @@ export const Chat: React.FC = () => {
         fetchMessages();
     }, [conversationId]);
 
-    const handleSendMessage = () => {
-        if (!newMessage.trim()) return;
-
-        const newMsg: Message = {
-            id: Date.now().toString(),
-            content: newMessage,
-            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            sender: "user",
-            status: "sent",
-        };
-
-        setMessages((prev) => [...prev, newMsg]);
-        setNewMessage("");
-    };
-
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            handleSendMessage();
-        }
-    };
-
     return (
         <Card className="w-full max-w-md h-[600px] mx-auto bg-black/20 border-white/20 text-white flex flex-col">
+            {/* Header with back button and username */}
             <div className="p-4 border-b border-white/10 flex items-center gap-4">
-                <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={() => navigate(`/conv`)}>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-white hover:bg-white/10"
+                    onClick={() => navigate(`/conv`)}
+                >
                     <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <div className="flex-1">
                     <h2 className="font-semibold">{otherUserName || "Loading..."}</h2>
                 </div>
             </div>
+
+            {/* Message list with scroll */}
             <ScrollArea className="flex-1 p-4 overflow-y-auto">
                 <div className="space-y-4">
                     {messages.map((message) => (
@@ -110,17 +100,15 @@ export const Chat: React.FC = () => {
                 </div>
             </ScrollArea>
 
+            {/* Message input */}
             <div className="p-4 border-t border-white/10">
                 <div className="flex items-center gap-2">
                     <Input
                         type="text"
                         placeholder="Type a message..."
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyDown={handleKeyPress}
                         className="flex-1 bg-white/10 border-white/10 text-white placeholder:text-white/60"
                     />
-                    <Button onClick={handleSendMessage} className="bg-pink-600 hover:bg-pink-700">
+                    <Button className="bg-pink-600 hover:bg-pink-700">
                         <Send className="h-5 w-5" />
                     </Button>
                 </div>
@@ -128,4 +116,3 @@ export const Chat: React.FC = () => {
         </Card>
     );
 };
-``

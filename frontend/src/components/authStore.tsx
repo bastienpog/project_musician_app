@@ -1,11 +1,13 @@
 import { create } from "zustand";
 
+// User model definition
 interface User {
     id: string;
     username: string;
     email: string;
 }
 
+// Zustand state shape for authentication
 interface AuthState {
     user: User | null;
     token: string | null;
@@ -14,10 +16,12 @@ interface AuthState {
     logout: () => void;
 }
 
+// Create Zustand store for authentication
 export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     token: localStorage.getItem("token"),
 
+    // Login function
     login: async (email, password) => {
         const res = await fetch("http://localhost:8000/auth/login", {
             method: "POST",
@@ -28,6 +32,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const data = await res.json();
 
         if (res.ok) {
+            // Save token and user ID to localStorage
             localStorage.setItem("token", data.token);
             localStorage.setItem("userId", data.userId);
 
@@ -37,6 +42,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
     },
 
+    // Register function
     register: async (username, email, password) => {
         const res = await fetch("http://localhost:8000/auth/register", {
             method: "POST",
@@ -45,6 +51,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
 
         if (res.ok) {
+            // Automatically log in after successful registration
             await get().login(email, password);
         } else {
             const data = await res.json();
@@ -52,7 +59,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
     },
 
+    // Logout function
     logout: () => {
+        // Clear user session from localStorage and Zustand
         localStorage.removeItem("token");
         localStorage.removeItem("userId");
         set({ user: null, token: null });
